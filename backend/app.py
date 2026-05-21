@@ -129,6 +129,11 @@ def index():
     """首页 - 地球可视化页面"""
     return send_file(os.path.join(os.path.dirname(__file__), '..', 'index.html'))
 
+@app.route('/cities.js')
+def cities_js():
+    """城市数据库文件"""
+    return send_file(os.path.join(os.path.dirname(__file__), '..', 'cities.js'))
+
 
 @app.route('/api/geocode', methods=['GET'])
 def geocode():

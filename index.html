@@ -185,7 +185,47 @@
   .marker-origin { color: #44ff88; }
   .marker-dest { color: #ffaa44; }
   .marker-end { color: #ff4444; }
+<!-- 路线列表 -->
+  #routes-list {
+    margin-top: 12px;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+  .route-item {
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .route-item:hover { background: rgba(100, 150, 255, 0.2); }
+  .route-item span:first-child { flex: 1; }
+  .route-delete { color: #ff6666; cursor: pointer; padding: 2px 6px; }
+  .route-delete:hover { color: #ff8888; }
+  .secondary-btn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid rgba(68, 200, 136, 0.4);
+    border-radius: 8px;
+    color: rgba(68, 200, 136, 0.9);
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.3s ease;
+    letter-spacing: 2px;
+  }
+  .secondary-btn:hover {
+    background: rgba(68, 200, 136, 0.15);
+    border-color: rgba(68, 200, 136, 0.6);
+  }
 </style>
+<script src="cities.js"></script>
 </head>
 <body>
 <div id="title">Record Live</div>
@@ -214,6 +254,8 @@
   </div>
   <button id="search-btn">显示路线</button>
   <button id="clear-btn">清除路线</button>
+  <button id="submit-btn" class="secondary-btn">提交路线</button>
+  <div id="routes-list"></div>
 </div>
 
 <div id="message"></div>
@@ -548,6 +590,73 @@ document.getElementById('clear-btn').addEventListener('click', () => {
     if (e.key === 'Enter') onSearchClick();
   });
 });
+
+// ========== 路线记录功能 ==========
+const ROUTES_KEY = 'record_live_routes';
+let savedRoutes = JSON.parse(localStorage.getItem(ROUTES_KEY) || '[]');
+
+// 渲染路线列表
+function renderRoutesList() {
+  const list = document.getElementById('routes-list');
+  if (savedRoutes.length === 0) {
+    list.innerHTML = '';
+    return;
+  }
+  list.innerHTML = savedRoutes.map((r, i) => `
+    <div class="route-item" data-index="${i}">
+      <span>${r.origin} → ${r.dest}${r.via ? ' → ' + r.via : ''}</span>
+      <span class="route-delete" data-delete="${i}">×</span>
+    </div>
+  `).join('');
+}
+
+// 提交路线
+function submitRoute() {
+  const origin = document.getElementById('origin-input').value.trim();
+  const dest = document.getElementById('dest-input').value.trim();
+  const via = document.getElementById('end-input').value.trim();
+
+  if (!origin || !dest) {
+    showMessage('请至少输入起点和终点', 'error');
+    return;
+  }
+
+  savedRoutes.push({ origin, dest, via });
+  localStorage.setItem(ROUTES_KEY, JSON.stringify(savedRoutes));
+  renderRoutesList();
+  showMessage('路线已提交', 'success');
+}
+
+// 删除路线
+function deleteRoute(index) {
+  savedRoutes.splice(index, 1);
+  localStorage.setItem(ROUTES_KEY, JSON.stringify(savedRoutes));
+  renderRoutesList();
+}
+
+// 点击路线显示
+function clickRoute(origin, dest, via) {
+  document.getElementById('origin-input').value = origin;
+  document.getElementById('dest-input').value = dest;
+  document.getElementById('end-input').value = via || '';
+  onSearchClick();
+}
+
+// 事件绑定
+document.getElementById('submit-btn').addEventListener('click', submitRoute);
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('route-delete')) {
+    deleteRoute(parseInt(e.target.dataset.delete));
+  } else if (e.target.closest('.route-item')) {
+    const item = e.target.closest('.route-item');
+    const idx = parseInt(item.dataset.index);
+    const route = savedRoutes[idx];
+    clickRoute(route.origin, route.dest, route.via);
+  }
+});
+
+// 初始化列表
+renderRoutesList();
 
 // Animation
 function animate() {
